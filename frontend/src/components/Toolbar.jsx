@@ -1,13 +1,111 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useStore } from '../store'
 
 function Toolbar() {
   const store = useStore()
-  const { executionState, selectedNodeId } = store
+  const { executionState, selectedNodeId, projectName, isProjectOpen } = store
   
   const isIdle = executionState === 'Idle'
   const isRunning = executionState === 'Running'
   const isPaused = executionState === 'Paused'
+  const [showProjectDialog, setShowProjectDialog] = useState('none') // 'none', 'create', 'open'
+  const [projectInput, setProjectInput] = useState('')
+  
+  const handleCreateProject = () => {
+    setShowProjectDialog('create')
+  }
+  
+  const handleOpenProject = () => {
+    setShowProjectDialog('open')
+  }
+  
+  const handleSubmitProject = async () => {
+    if (!projectInput.trim()) return
+    
+    if (showProjectDialog === 'create') {
+      const path = `projects/${projectInput}.botui`
+      await store.createProject(projectInput, path)
+    } else {
+      await store.openProject(projectInput)
+    }
+    setShowProjectDialog('none')
+    setProjectInput('')
+  }
+  
+  const handleCancel = () => {
+    setShowProjectDialog('none')
+    setProjectInput('')
+  }
+  
+  if (!isProjectOpen) {
+    return (
+      <>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '12px',
+          padding: '12px 16px',
+          background: 'var(--bg-secondary)',
+          borderBottom: '1px solid var(--border-color)'
+        }}>
+          <button className="btn btn-primary" onClick={handleCreateProject}>
+            + Create New Project
+          </button>
+          <button className="btn btn-secondary" onClick={handleOpenProject}>
+            📂 Open Project
+          </button>
+        </div>
+        
+        {showProjectDialog !== 'none' && (
+          <div style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000
+          }}>
+            <div style={{
+              background: 'var(--bg-secondary)',
+              padding: '24px',
+              borderRadius: '8px',
+              minWidth: '300px'
+            }}>
+              <h3 style={{ marginBottom: '16px' }}>
+                {showProjectDialog === 'create' ? 'Create New Project' : 'Open Project'}
+              </h3>
+              <input
+                type="text"
+                value={projectInput}
+                onChange={(e) => setProjectInput(e.target.value)}
+                placeholder={showProjectDialog === 'create' ? 'Project name' : 'Path (e.g., projects/test.botui)'}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  marginBottom: '16px',
+                  background: 'var(--bg-tertiary)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '4px',
+                  color: 'var(--text-primary)'
+                }}
+                autoFocus
+              />
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                <button className="btn btn-secondary" onClick={handleCancel}>
+                  Cancel
+                </button>
+                <button className="btn btn-primary" onClick={handleSubmitProject}>
+                  {showProjectDialog === 'create' ? 'Create' : 'Open'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
+    )
+  }
   
   return (
     <div style={{
@@ -19,7 +117,7 @@ function Toolbar() {
       borderBottom: '1px solid var(--border-color)'
     }}>
       <div style={{ fontWeight: 600, fontSize: '16px' }}>
-        {store.projectName || 'Visual Block Runtime'}
+        {projectName || 'Visual Block Runtime'}
       </div>
       
       <div style={{ flex: 1 }} />

@@ -9,8 +9,12 @@ from typing import Dict, List, Optional, Any
 class PluginLoader:
     """Loads plugins from the plugins directory."""
     
-    def __init__(self, plugins_dir: str = "plugins"):
-        self.plugins_dir = Path(plugins_dir)
+    def __init__(self, plugins_dir: str = None):
+        if plugins_dir is None:
+            # Default to plugins directory in project root
+            self.plugins_dir = Path(__file__).parent.parent.parent / "plugins"
+        else:
+            self.plugins_dir = Path(plugins_dir)
         self._plugins: Dict[str, Dict[str, Any]] = {}
     
     def discover_plugins(self) -> List[Dict]:

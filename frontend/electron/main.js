@@ -1,12 +1,10 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron'
-import path from 'path'
-import { spawn } from 'child_process'
-import fs from 'fs'
-import http from 'http'
-import { fileURLToPath } from 'url'
+const { app, BrowserWindow, ipcMain, dialog } = require('electron')
+const path = require('path')
+const { spawn } = require('child_process')
+const fs = require('fs')
+const http = require('http')
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
+// __filename and __dirname are available in CommonJS
 
 let mainWindow = null
 let backendProcess = null
