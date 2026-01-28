@@ -1,7 +1,12 @@
-const { app, BrowserWindow, ipcMain } = require('electron')
-const path = require('path')
-const { spawn } = require('child_process')
-const fs = require('fs')
+import { app, BrowserWindow, ipcMain, dialog } from 'electron'
+import path from 'path'
+import { spawn } from 'child_process'
+import fs from 'fs'
+import http from 'http'
+import { fileURLToPath } from 'url'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 let mainWindow = null
 let backendProcess = null
@@ -11,7 +16,6 @@ const BACKEND_PORT = 8000
 async function waitForBackend(maxAttempts = 30) {
   for (let i = 0; i < maxAttempts; i++) {
     try {
-      const http = require('http')
       await new Promise((resolve, reject) => {
         const req = http.get(`http://127.0.0.1:${BACKEND_PORT}/health`, (res) => {
           if (res.statusCode === 200) {
@@ -44,7 +48,7 @@ function startBackend() {
     return
   }
   
-  backendProcess = spawn('python3', [mainPy], {
+  backendProcess = spawn('python', [mainPy], {
     cwd: backendPath,
     stdio: ['pipe', 'pipe', 'pipe']
   })
@@ -119,7 +123,6 @@ app.on('before-quit', () => {
 
 // IPC handlers for dialogs
 ipcMain.handle('select-directory', async () => {
-  const { dialog } = require('electron')
   const result = await dialog.showOpenDialog(mainWindow, {
     properties: ['openDirectory', 'createDirectory']
   })
