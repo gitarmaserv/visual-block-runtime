@@ -75,8 +75,7 @@ function createWindow() {
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js')
     },
-    backgroundColor: '#1a1a2e',
-    titleBarStyle: 'hidden'
+    backgroundColor: '#1a1a2e'
   })
   
   // Load the app
