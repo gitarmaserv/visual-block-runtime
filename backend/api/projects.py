@@ -44,7 +44,7 @@ def create_project(req: CreateProjectRequest):
             pass
         
         # Initialize database
-        db_path = os.path.join(project_path, "project.sqlite")
+        db_path = os.path.join(req.path, "project.sqlite")
         db = ProjectDatabase(db_path)
         db.init_schema()
         
@@ -69,10 +69,18 @@ def open_project(req: OpenProjectRequest):
     try:
         if not os.path.exists(req.path):
             raise HTTPException(status_code=404, detail="Project not found")
-        
+
+        # Initialize database if not exists
+        db_path = os.path.join(req.path, "project.sqlite")
+        if not os.path.exists(db_path):
+            db = ProjectDatabase(db_path)
+            # Create initial graph
+            graph_name = os.path.basename(req.path).replace('.botui', '')
+            db.save_graph(graph_name, {"nodes": [], "edges": [], "viewport": {"x": 0, "y": 0, "zoom": 1}})
+
         global _current_project_path
         _current_project_path = req.path
-        
+
         return {
             "success": True,
             "path": req.path

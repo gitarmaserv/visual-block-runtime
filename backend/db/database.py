@@ -142,8 +142,8 @@ class AppDatabase(Database):
     def get_global_vars(self) -> List[Dict]:
         """Get all global variables with values."""
         rows = self.fetch_all("""
-            SELECT v.def.var_id, v.def.base_name, v.def.title, v.def.description,
-                   v.val.value_json, v.val.updated_at
+            SELECT v_def.var_id, v_def.base_name, v_def.title, v_def.description,
+                   v_val.value_json, v_val.updated_at
             FROM global_vars_def v_def
             JOIN global_vars_val v_val ON v_def.var_id = v_val.var_id
         """)
@@ -171,8 +171,8 @@ class AppDatabase(Database):
     def get_global_var(self, var_id: int) -> Optional[Dict]:
         """Get a specific global variable."""
         row = self.fetch_one("""
-            SELECT v.def.var_id, v.def.base_name, v.def.title, v.def.description,
-                   v.val.value_json, v.val.updated_at
+            SELECT v_def.var_id, v_def.base_name, v_def.title, v_def.description,
+                   v_val.value_json, v_val.updated_at
             FROM global_vars_def v_def
             JOIN global_vars_val v_val ON v_def.var_id = v_val.var_id
             WHERE v_def.var_id = ?
@@ -191,7 +191,11 @@ class AppDatabase(Database):
 
 class ProjectDatabase(Database):
     """Project database (project.sqlite)."""
-    
+
+    def __init__(self, db_path: str):
+        super().__init__(db_path)
+        self.init_schema()
+
     def init_schema(self):
         """Initialize database schema."""
         with self.get_connection() as conn:
@@ -258,7 +262,11 @@ class ProjectDatabase(Database):
     def save_graph(self, name: str, graph_json: Dict) -> int:
         """Save or update graph."""
         now = datetime.now().isoformat()
-        graph_json_str = json.dumps(graph_json)
+        try:
+            graph_json_str = json.dumps(graph_json)
+        except Exception as e:
+            print(f"Cannot serialize graph_json: {e}, type: {type(graph_json)}")
+            raise
         
         # Check if graph exists
         existing = self.fetch_one(
@@ -369,8 +377,8 @@ class ProjectDatabase(Database):
     def get_project_vars(self) -> List[Dict]:
         """Get all project variables with values."""
         rows = self.fetch_all("""
-            SELECT v.def.var_id, v.def.base_name, v.def.title, v.def.description,
-                   v.val.value_json, v.val.updated_at
+            SELECT v_def.var_id, v_def.base_name, v_def.title, v_def.description,
+                   v_val.value_json, v_val.updated_at
             FROM project_vars_def v_def
             JOIN project_vars_val v_val ON v_def.var_id = v_val.var_id
         """)
@@ -398,8 +406,8 @@ class ProjectDatabase(Database):
     def get_project_var(self, var_id: int) -> Optional[Dict]:
         """Get a specific project variable."""
         row = self.fetch_one("""
-            SELECT v.def.var_id, v.def.base_name, v.def.title, v.def.description,
-                   v.val.value_json, v.val.updated_at
+            SELECT v_def.var_id, v_def.base_name, v_def.title, v_def.description,
+                   v_val.value_json, v_val.updated_at
             FROM project_vars_def v_def
             JOIN project_vars_val v_val ON v_def.var_id = v_val.var_id
             WHERE v_def.var_id = ?

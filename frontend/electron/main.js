@@ -76,8 +76,20 @@ function createWindow() {
     backgroundColor: '#1a1a2e'
   })
   
-  // Load the app
-  const startUrl = 'http://localhost:5173'
+  // Check if production build exists
+  const prodPath = path.join(__dirname, '..', 'dist', 'index.html')
+  const useProd = fs.existsSync(prodPath)
+  
+  let startUrl
+  if (useProd) {
+    // Use production build (file protocol)
+    startUrl = `file://${prodPath}`
+    console.log('Using production build')
+  } else {
+    // Use Vite dev server
+    startUrl = 'http://localhost:5173'
+    console.log('Using dev server')
+  }
   
   mainWindow.loadURL(startUrl)
   
@@ -120,6 +132,17 @@ app.on('before-quit', () => {
 
 // IPC handlers for dialogs
 ipcMain.handle('select-directory', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openDirectory', 'createDirectory']
+  })
+  
+  if (!result.canceled && result.filePaths.length > 0) {
+    return result.filePaths[0]
+  }
+  return null
+})
+
+ipcMain.handle('select-file', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
     properties: ['openDirectory', 'createDirectory']
   })

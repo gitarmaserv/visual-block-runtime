@@ -8,26 +8,27 @@ function Toolbar() {
   const isIdle = executionState === 'Idle'
   const isRunning = executionState === 'Running'
   const isPaused = executionState === 'Paused'
-  const [showProjectDialog, setShowProjectDialog] = useState('none') // 'none', 'create', 'open'
+  const [showProjectDialog, setShowProjectDialog] = useState('none') // 'none', 'create'
   const [projectInput, setProjectInput] = useState('')
   
   const handleCreateProject = () => {
     setShowProjectDialog('create')
   }
   
-  const handleOpenProject = () => {
-    setShowProjectDialog('open')
+  const handleOpenProject = async () => {
+    if (window.electronAPI && window.electronAPI.selectFile) {
+      const path = await window.electronAPI.selectFile()
+      if (path) {
+        await store.openProject(path)
+      }
+    }
   }
   
   const handleSubmitProject = async () => {
     if (!projectInput.trim()) return
     
-    if (showProjectDialog === 'create') {
-      const path = `projects/${projectInput}.botui`
-      await store.createProject(projectInput, path)
-    } else {
-      await store.openProject(projectInput)
-    }
+    const path = `projects/${projectInput}.botui`
+    await store.createProject(projectInput, path)
     setShowProjectDialog('none')
     setProjectInput('')
   }
@@ -57,7 +58,7 @@ function Toolbar() {
           </button>
         </div>
         
-        {showProjectDialog !== 'none' && (
+        {showProjectDialog === 'create' && (
           <div style={{
             position: 'fixed',
             top: 0, left: 0, right: 0, bottom: 0,
@@ -73,14 +74,12 @@ function Toolbar() {
               borderRadius: '8px',
               minWidth: '300px'
             }}>
-              <h3 style={{ marginBottom: '16px' }}>
-                {showProjectDialog === 'create' ? 'Create New Project' : 'Open Project'}
-              </h3>
+              <h3 style={{ marginBottom: '16px' }}>Create New Project</h3>
               <input
                 type="text"
                 value={projectInput}
                 onChange={(e) => setProjectInput(e.target.value)}
-                placeholder={showProjectDialog === 'create' ? 'Project name' : 'Path (e.g., projects/test.botui)'}
+                placeholder="Project name"
                 style={{
                   width: '100%',
                   padding: '8px 12px',
@@ -97,7 +96,7 @@ function Toolbar() {
                   Cancel
                 </button>
                 <button className="btn btn-primary" onClick={handleSubmitProject}>
-                  {showProjectDialog === 'create' ? 'Create' : 'Open'}
+                  Create
                 </button>
               </div>
             </div>
@@ -150,15 +149,22 @@ function Toolbar() {
         </div>
         
         {/* Actions */}
+        <button
+          className="btn btn-secondary"
+          onClick={() => store.saveGraph()}
+        >
+          💾 Save
+        </button>
+
         {isIdle && (
           <>
-            <button 
+            <button
               className="btn btn-primary"
               onClick={() => store.startFromBeginning()}
             >
               ▶ Start from Beginning
             </button>
-            <button 
+            <button
               className="btn btn-secondary"
               onClick={() => store.startFromSelected()}
               disabled={!selectedNodeId}

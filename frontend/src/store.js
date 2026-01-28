@@ -1,7 +1,11 @@
 import { create } from 'zustand'
 import axios from 'axios'
 
-const API_BASE = '/api'
+// Determine API base URL based on environment
+// In browser dev mode (Vite), use proxy '/api'
+// In Electron, use direct backend URL
+const isElectron = navigator.userAgent.includes('Electron')
+const API_BASE = isElectron ? 'http://localhost:8000/api' : '/api'
 
 // Store for application state
 export const useStore = create((set, get) => ({
@@ -50,7 +54,7 @@ export const useStore = create((set, get) => ({
       await axios.post(`${API_BASE}/projects/open`, { path })
       
       // Load graph
-      const name = path.split('/').pop().replace('.botui', '')
+      const name = path.split(/[/\\]/).pop().replace(/\.botui$/, '')
       
       set({ 
         projectPath: path, 
