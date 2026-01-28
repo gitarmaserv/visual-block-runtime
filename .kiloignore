@@ -1,0 +1,37 @@
+# Kiloignore - игнор для Kilo/агентов
+# Цель: не тратить токены на мусор
+
+# Сборка и зависимости
+node_modules/
+dist/
+build/
+.next/
+*.egg-info/
+*.pyc
+__pycache__/
+*.so
+*.pyd
+
+# Кеши
+.cache/
+.venv/
+venv/
+env/
+*.log
+*.sqlite-journal
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Большие файлы
+artifacts/
+*.zip
+*.tar.gz
+*.tar
+
+# Системные
+.DS_Store
+Thumbs.db

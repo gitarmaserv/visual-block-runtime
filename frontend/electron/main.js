@@ -1,0 +1,131 @@
+const { app, BrowserWindow, ipcMain } = require('electron')
+const path = require('path')
+const { spawn } = require('child_process')
+const fs = require('fs')
+
+let mainWindow = null
+let backendProcess = null
+
+const BACKEND_PORT = 8000
+
+async function waitForBackend(maxAttempts = 30) {
+  for (let i = 0; i < maxAttempts; i++) {
+    try {
+      const http = require('http')
+      await new Promise((resolve, reject) => {
+        const req = http.get(`http://127.0.0.1:${BACKEND_PORT}/health`, (res) => {
+          if (res.statusCode === 200) {
+            resolve()
+          } else {
+            reject()
+          }
+        })
+        req.on('error', reject)
+        req.setTimeout(1000, () => {
+          req.destroy()
+          reject()
+        })
+      })
+      return true
+    } catch (e) {
+      await new Promise(r => setTimeout(r, 500))
+    }
+  }
+  return false
+}
+
+function startBackend() {
+  const backendPath = path.join(__dirname, '..', 'backend')
+  const mainPy = path.join(backendPath, 'main.py')
+  
+  // Check if Python file exists
+  if (!fs.existsSync(mainPy)) {
+    console.error('Backend not found:', mainPy)
+    return
+  }
+  
+  backendProcess = spawn('python3', [mainPy], {
+    cwd: backendPath,
+    stdio: ['pipe', 'pipe', 'pipe']
+  })
+  
+  backendProcess.stdout.on('data', (data) => {
+    console.log(`Backend: ${data}`)
+  })
+  
+  backendProcess.stderr.on('data', (data) => {
+    console.error(`Backend Error: ${data}`)
+  })
+  
+  backendProcess.on('close', (code) => {
+    console.log(`Backend process exited with code ${code}`)
+  })
+}
+
+function createWindow() {
+  mainWindow = new BrowserWindow({
+    width: 1400,
+    height: 900,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js')
+    },
+    backgroundColor: '#1a1a2e',
+    titleBarStyle: 'hidden'
+  })
+  
+  // Load the app
+  const startUrl = 'http://localhost:5173'
+  
+  mainWindow.loadURL(startUrl)
+  
+  // Open DevTools in development
+  mainWindow.webContents.openDevTools()
+  
+  mainWindow.on('closed', () => {
+    mainWindow = null
+  })
+}
+
+app.whenReady().then(async () => {
+  // Start backend
+  startBackend()
+  
+  // Wait for backend to be ready
+  console.log('Waiting for backend...')
+  const ready = await waitForBackend()
+  
+  if (ready) {
+    console.log('Backend is ready!')
+    createWindow()
+  } else {
+    console.error('Backend failed to start!')
+    app.quit()
+  }
+})
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit()
+  }
+})
+
+app.on('before-quit', () => {
+  if (backendProcess) {
+    backendProcess.kill()
+  }
+})
+
+// IPC handlers for dialogs
+ipcMain.handle('select-directory', async () => {
+  const { dialog } = require('electron')
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openDirectory', 'createDirectory']
+  })
+  
+  if (!result.canceled && result.filePaths.length > 0) {
+    return result.filePaths[0]
+  }
+  return null
+})
